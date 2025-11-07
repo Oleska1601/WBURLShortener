@@ -1,0 +1,18 @@
+package main
+
+import (
+	"log/slog"
+
+	"github.com/Oleska1601/WBURLShortener/config"
+	"github.com/Oleska1601/WBURLShortener/internal/app"
+)
+
+func main() {
+	cfg, err := config.New()
+	if err != nil {
+		slog.Error("main config.New", slog.Any("error", err))
+		return
+	}
+	app.Run(cfg)
+
+}

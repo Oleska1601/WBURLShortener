@@ -1,0 +1,156 @@
+basePath: /
+definitions:
+  controller.CreateShortURLResponse:
+    properties:
+      id:
+        type: integer
+      short_url:
+        type: string
+    type: object
+  controller.GetAnalyticsResponse:
+    properties:
+      day_count:
+        additionalProperties:
+          type: integer
+        type: object
+      month_count:
+        additionalProperties:
+          type: integer
+        type: object
+      short_url:
+        type: string
+      total_count:
+        type: integer
+      user_agent_count:
+        additionalProperties:
+          type: integer
+        type: object
+    type: object
+  dto.CreateShortURLRequest:
+    properties:
+      short_url:
+        type: string
+      url:
+        type: string
+    required:
+    - url
+    type: object
+host: localhost:8082
+info:
+  contact: {}
+  description: API for URL Shortener
+  termsOfService: http://swagger.io/terms/
+  title: URL Shortener
+  version: "1.0"
+paths:
+  /api/analytics/{short_url}:
+    get:
+      consumes:
+      - application/json
+      description: get analytics by provided short url
+      parameters:
+      - description: short url
+        in: path
+        name: short_url
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.GetAnalyticsResponse'
+        "400":
+          description: invalid short url
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: failed to get analytics
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: get analytics by short url
+      tags:
+      - notify
+  /api/s/{short_url}:
+    get:
+      consumes:
+      - application/json
+      description: redirect to original url by provided short url
+      parameters:
+      - description: short url
+        in: path
+        name: short_url
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "301":
+          description: redirect by short url
+        "400":
+          description: invalid short url
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: provided short url does not exist
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: failed to redirect by provided short url
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: redirect by short url
+      tags:
+      - url
+  /api/shorten:
+    post:
+      consumes:
+      - application/json
+      description: create short url with provided params
+      parameters:
+      - description: create short url request
+        in: body
+        name: notification
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateShortURLRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/controller.CreateShortURLResponse'
+        "400":
+          description: impossible to create short url
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: provided short url already exists
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: failed to create notification
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: create short url
+      tags:
+      - url
+swagger: "2.0"
