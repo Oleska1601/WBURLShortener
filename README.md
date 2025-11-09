@@ -110,5 +110,5 @@ http://localhost:8082/swagger/index.html
 ```
 2. UI
 ```
-
+http://localhost:8082/static/
 ```
