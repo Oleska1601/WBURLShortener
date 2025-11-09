@@ -12,7 +12,6 @@ import (
 func (s *Server) setupRouter() {
 	ginMode := ""
 	engine := ginext.New(ginMode)
-	engine.Use(CORSMiddleware())
 	engine.Static("/static", "./web")
 
 	notifyGroup := engine.Group("/api/")

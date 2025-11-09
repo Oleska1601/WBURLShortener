@@ -89,7 +89,7 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "301": {
+                    "302": {
                         "description": "redirect by short url"
                     },
                     "400": {

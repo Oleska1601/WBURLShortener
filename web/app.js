@@ -97,6 +97,7 @@ ${formatObjectData(data.user_agent_count)}
 }
 
 // ==================== ТЕСТ РЕДИРЕКТА ====================
+// ==================== ТЕСТ РЕДИРЕКТА ====================
 async function testRedirect(shortUrlParam = null) {
     const short_url = shortUrlParam || document.getElementById('testInput').value.trim();
     const result = document.getElementById('testResult');
@@ -106,54 +107,8 @@ async function testRedirect(shortUrlParam = null) {
         return;
     }
 
-    try {
-        // 🔴 ПРОБЛЕМА БЫЛА ЗДЕСЬ: используем обычный fetch без redirect: 'manual'
-        const response = await fetch(`${API_BASE}/api/s/${short_url}`);
-
-        let message, type;
-
-        switch (response.status) {
-            case 200:
-            case 301:
-            case 302:
-                message = '✅ Редирект работает! Открываю оригинальный URL...';
-                type = 'success';
-                showResult(result, message, type);
-                
-                // ✅ ОТКРЫВАЕМ ОРИГИНАЛЬНЫЙ URL ИЗ ЗАГОЛОВКОВ
-                const originalUrl = response.url; // Браузер уже сделал редирект
-                window.open(originalUrl, '_blank');
-                break;
-                
-            case 400:
-                message = '❌ Неверный формат короткой ссылки';
-                type = 'error';
-                showResult(result, message, type);
-                break;
-                
-            case 404:
-                message = '❌ Ссылка не найдена';
-                type = 'error';
-                showResult(result, message, type);
-                break;
-                
-            case 500:
-                message = '❌ Ошибка сервера';
-                type = 'error';
-                showResult(result, message, type);
-                break;
-                
-            default:
-                message = `⚠️ Статус: ${response.status}`;
-                type = 'warning';
-                showResult(result, message, type);
-        }
-
-        if (!shortUrlParam) document.getElementById('testInput').value = '';
-
-    } catch (error) {
-        showResult(result, `❌ Ошибка сети: ${error.message}`, 'error');
-    }
+    // ✅ ПЕРЕХОД В ТЕКУЩЕЙ ВКЛАДКЕ - сработает редирект
+    window.location.href = `${API_BASE}/api/s/${short_url}`;
 }
 
 // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================

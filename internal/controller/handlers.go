@@ -87,7 +87,7 @@ func (s *Server) CreateShortURLHandler(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param short_url path string true "short url"
-// @Success	301 "redirect by short url"
+// @Success	302 "redirect by short url"
 // @Failure	400	{object} map[string]string "invalid short url"
 // @Failure	404	{object} map[string]string "provided short url does not exist"
 // @Failure	500	{object} map[string]string "failed to redirect by provided short url"
@@ -119,6 +119,8 @@ func (s *Server) RedirectShortURLHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid short url"})
 		return
 	}
+
+	fmt.Println(shortURL)
 
 	originalURL, err := s.usecase.GetURL(ctx, shortURL)
 	if err != nil {
@@ -166,7 +168,7 @@ func (s *Server) RedirectShortURLHandler(c *gin.Context) {
 			Msg("create analytics successful")
 	}
 
-	c.Redirect(http.StatusMovedPermanently, originalURL)
+	c.Redirect(http.StatusFound, originalURL)
 }
 
 // GetAnalyticsHandler godoc
