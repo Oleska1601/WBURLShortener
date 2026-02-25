@@ -29,22 +29,22 @@
 
 1. Таблица с ссылками
 ```sql
-CREATE TABLE urls (
+CREATE TABLE IF NOT EXISTS urls (
     id SERIAL PRIMARY KEY,
     short_url VARCHAR(6) UNIQUE NOT NULL,
     original_url VARCHAR(255) NOT NULL,
-    created_at TIMESTAMPZ NOT NULL DEFAULT NOW()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ```
 
 2. Таблица для сбора аналитики
 ```sql
 CREATE TABLE IF NOT EXISTS analytics (
-    id SERIAL PRIMARY KEY,
-    short_url VARCHAR(7) NOT NULL REFERENCES urls(short_url) ON DELETE CASCADE, 
-    requested_at TIMESTAMPZ NOT NULL DEFAULT NOW(),
+     id SERIAL PRIMARY KEY,
+    short_url VARCHAR(6) NOT NULL REFERENCES urls(short_url) ON DELETE CASCADE,
     user_agent VARCHAR(255) NOT NULL,
     IP VARCHAR(255) NOT NULL,
+    requested_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ```
 
