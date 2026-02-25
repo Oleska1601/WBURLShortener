@@ -9,24 +9,23 @@ import (
 
 func initDB(cfg *config.PostgresConfig) (*dbpg.DB, error) {
 	masterDSN := fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=%s",
-		cfg.User,
+		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
+		cfg.Username,
 		cfg.Password,
 		cfg.Host,
 		cfg.Port,
-		cfg.DB,
-		cfg.SSLMode,
+		cfg.Database,
 	)
-	slaveDSNs := []string{}
+	slavesDSN := []string{}
 	options := &dbpg.Options{
 		MaxOpenConns:    cfg.MaxOpenConns,
 		MaxIdleConns:    cfg.MaxIdleConns,
 		ConnMaxLifetime: cfg.ConnMaxLifetime,
 	}
-	db, err := dbpg.New(masterDSN, slaveDSNs, options)
+	db, err := dbpg.New(masterDSN, slavesDSN, options)
 	if err != nil {
-		return nil, fmt.Errorf("create a new DB instance: %w", err)
+		return nil, fmt.Errorf("create new DB instance: %w", err)
 	}
-	return db, nil
 
+	return db, nil
 }

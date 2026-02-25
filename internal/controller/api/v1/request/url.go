@@ -1,4 +1,4 @@
-package dto
+package request
 
 import (
 	"fmt"
@@ -10,8 +10,8 @@ import (
 )
 
 type CreateShortURLRequest struct {
-	URL      string `json:"url" binding:"required"`
-	ShortURL string `json:"short_url"`
+	URL      string `json:"url" validate:"required"`
+	ShortURL string `json:"short_url" validate:"omitempty"`
 }
 
 func validateShortURL(shortURL string) error {
@@ -33,7 +33,7 @@ func validateShortURL(shortURL string) error {
 	return nil
 }
 
-func (r *CreateShortURLRequest) Validate() error {
+func (r *CreateShortURLRequest) validate() error {
 	parsed, err := url.Parse(r.URL)
 	if err != nil {
 		return fmt.Errorf("invalid URL: %w", err)
@@ -55,7 +55,7 @@ func (r *CreateShortURLRequest) Validate() error {
 func (r *CreateShortURLRequest) ToModel() (*models.URL, error) {
 	r.URL = strings.TrimSpace(r.URL)
 	r.ShortURL = strings.TrimSpace(r.ShortURL)
-	if err := r.Validate(); err != nil {
+	if err := r.validate(); err != nil {
 		return nil, err
 	}
 
@@ -65,5 +65,4 @@ func (r *CreateShortURLRequest) ToModel() (*models.URL, error) {
 	}
 
 	return url, nil
-
 }

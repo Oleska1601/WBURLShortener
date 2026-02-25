@@ -16,17 +16,14 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/analytics/{short_url}": {
+        "/api/v1/analytics/{short_url}": {
             "get": {
                 "description": "get analytics by provided short url",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "notify"
+                    "ANALYTICS API"
                 ],
                 "summary": "get analytics by short url",
                 "parameters": [
@@ -42,7 +39,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.GetAnalyticsResponse"
+                            "$ref": "#/definitions/models.AnAgregation"
                         }
                     },
                     "400": {
@@ -55,7 +52,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "failed to get analytics",
+                        "description": "server error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -66,17 +63,16 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/s/{short_url}": {
+        "/api/v1/s/{short_url}": {
             "get": {
                 "description": "redirect to original url by provided short url",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/plain",
+                    "text/html"
                 ],
                 "tags": [
-                    "url"
+                    "URL API"
                 ],
                 "summary": "redirect by short url",
                 "parameters": [
@@ -90,7 +86,13 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "302": {
-                        "description": "redirect by short url"
+                        "description": "redirect by short url",
+                        "headers": {
+                            "Location": {
+                                "type": "string",
+                                "description": "redirect URL"
+                            }
+                        }
                     },
                     "400": {
                         "description": "invalid short url",
@@ -111,7 +113,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "failed to redirect by provided short url",
+                        "description": "server error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -122,7 +124,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/shorten": {
+        "/api/v1/shorten": {
             "post": {
                 "description": "create short url with provided params",
                 "consumes": [
@@ -132,17 +134,17 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "url"
+                    "URL API"
                 ],
                 "summary": "create short url",
                 "parameters": [
                     {
                         "description": "create short url request",
-                        "name": "notification",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateShortURLRequest"
+                            "$ref": "#/definitions/request.CreateShortURLRequest"
                         }
                     }
                 ],
@@ -150,11 +152,11 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/controller.CreateShortURLResponse"
+                            "$ref": "#/definitions/response.CreateShortURLResponse"
                         }
                     },
                     "400": {
-                        "description": "impossible to create short url",
+                        "description": "validate error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -163,7 +165,7 @@ const docTemplate = `{
                         }
                     },
                     "409": {
-                        "description": "provided short url already exists",
+                        "description": "conflict error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -172,7 +174,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "failed to create notification",
+                        "description": "server error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -185,18 +187,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "controller.CreateShortURLResponse": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "short_url": {
-                    "type": "string"
-                }
-            }
-        },
-        "controller.GetAnalyticsResponse": {
+        "models.AnAgregation": {
             "type": "object",
             "properties": {
                 "day_count": {
@@ -225,7 +216,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.CreateShortURLRequest": {
+        "request.CreateShortURLRequest": {
             "type": "object",
             "required": [
                 "url"
@@ -238,6 +229,17 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "response.CreateShortURLResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "short_url": {
+                    "type": "string"
+                }
+            }
         }
     }
 }`
@@ -245,7 +247,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8082",
+	Host:             "localhost:8081",
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "URL Shortener",

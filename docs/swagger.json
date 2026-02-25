@@ -7,20 +7,17 @@
         "contact": {},
         "version": "1.0"
     },
-    "host": "localhost:8082",
+    "host": "localhost:8081",
     "basePath": "/",
     "paths": {
-        "/api/analytics/{short_url}": {
+        "/api/v1/analytics/{short_url}": {
             "get": {
                 "description": "get analytics by provided short url",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "notify"
+                    "ANALYTICS API"
                 ],
                 "summary": "get analytics by short url",
                 "parameters": [
@@ -36,7 +33,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.GetAnalyticsResponse"
+                            "$ref": "#/definitions/models.AnAgregation"
                         }
                     },
                     "400": {
@@ -49,7 +46,7 @@
                         }
                     },
                     "500": {
-                        "description": "failed to get analytics",
+                        "description": "server error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -60,17 +57,16 @@
                 }
             }
         },
-        "/api/s/{short_url}": {
+        "/api/v1/s/{short_url}": {
             "get": {
                 "description": "redirect to original url by provided short url",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
-                    "application/json"
+                    "application/json",
+                    "text/plain",
+                    "text/html"
                 ],
                 "tags": [
-                    "url"
+                    "URL API"
                 ],
                 "summary": "redirect by short url",
                 "parameters": [
@@ -84,7 +80,13 @@
                 ],
                 "responses": {
                     "302": {
-                        "description": "redirect by short url"
+                        "description": "redirect by short url",
+                        "headers": {
+                            "Location": {
+                                "type": "string",
+                                "description": "redirect URL"
+                            }
+                        }
                     },
                     "400": {
                         "description": "invalid short url",
@@ -105,7 +107,7 @@
                         }
                     },
                     "500": {
-                        "description": "failed to redirect by provided short url",
+                        "description": "server error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -116,7 +118,7 @@
                 }
             }
         },
-        "/api/shorten": {
+        "/api/v1/shorten": {
             "post": {
                 "description": "create short url with provided params",
                 "consumes": [
@@ -126,17 +128,17 @@
                     "application/json"
                 ],
                 "tags": [
-                    "url"
+                    "URL API"
                 ],
                 "summary": "create short url",
                 "parameters": [
                     {
                         "description": "create short url request",
-                        "name": "notification",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateShortURLRequest"
+                            "$ref": "#/definitions/request.CreateShortURLRequest"
                         }
                     }
                 ],
@@ -144,11 +146,11 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/controller.CreateShortURLResponse"
+                            "$ref": "#/definitions/response.CreateShortURLResponse"
                         }
                     },
                     "400": {
-                        "description": "impossible to create short url",
+                        "description": "validate error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -157,7 +159,7 @@
                         }
                     },
                     "409": {
-                        "description": "provided short url already exists",
+                        "description": "conflict error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -166,7 +168,7 @@
                         }
                     },
                     "500": {
-                        "description": "failed to create notification",
+                        "description": "server error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -179,18 +181,7 @@
         }
     },
     "definitions": {
-        "controller.CreateShortURLResponse": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "short_url": {
-                    "type": "string"
-                }
-            }
-        },
-        "controller.GetAnalyticsResponse": {
+        "models.AnAgregation": {
             "type": "object",
             "properties": {
                 "day_count": {
@@ -219,7 +210,7 @@
                 }
             }
         },
-        "dto.CreateShortURLRequest": {
+        "request.CreateShortURLRequest": {
             "type": "object",
             "required": [
                 "url"
@@ -229,6 +220,17 @@
                     "type": "string"
                 },
                 "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.CreateShortURLResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "short_url": {
                     "type": "string"
                 }
             }

@@ -3,6 +3,7 @@ package models
 import "time"
 
 type Analytics struct {
+	ID          int       `json:"id"`
 	ShortURL    string    `json:"short_url"`
 	RequestedAt time.Time `json:"requested_at"`
 	UserAgent   string    `json:"user_agent"`

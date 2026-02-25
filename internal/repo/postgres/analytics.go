@@ -1,4 +1,4 @@
-package repo
+package postgres
 
 import (
 	"context"
@@ -22,92 +22,105 @@ const (
 )
 
 func (r *PgRepo) GetAnTotalCount(ctx context.Context, shortURL string) (int, error) {
-	fmt.Println(shortURL)
-	row := r.db.Master.QueryRowContext(ctx, selectAnCount, shortURL)
+	row := r.db.QueryRowContext(ctx, selectAnCount, shortURL)
 	var count int
 	if err := row.Scan(&count); err != nil {
-		return 0, fmt.Errorf("row.Scan: %w", err)
+		return 0, fmt.Errorf("row scan: %w", err)
 	}
 
 	return count, nil
 }
 
 func (r *PgRepo) GetAnDayCount(ctx context.Context, shortURL string) (map[string]int, error) {
-	rows, err := r.db.Master.QueryContext(ctx, selectAnDayCount, shortURL)
+	rows, err := r.db.QueryContext(ctx, selectAnDayCount, shortURL)
 	if err != nil {
-		return nil, fmt.Errorf("r.db.Master.QueryContext: %w", err)
+		return nil, fmt.Errorf("query context: %w", err)
 	}
+
+	defer rows.Close()
 
 	dayCount := make(map[string]int)
 	var date string
 	var count int
 	for rows.Next() {
-		if err := rows.Scan(&date, &count); err != nil {
-			return nil, fmt.Errorf("rows.Scan: %w", err)
+		err := rows.Scan(&date, &count)
+		if err != nil {
+			return nil, fmt.Errorf("rows scan: %w", err)
 		}
 
 		dayCount[date] = count
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows error: %w", err)
 	}
 
 	return dayCount, nil
 }
 
 func (r *PgRepo) GetAnMonthCount(ctx context.Context, shortURL string) (map[string]int, error) {
-	rows, err := r.db.Master.QueryContext(ctx, selectAnMonthCount, shortURL)
+	rows, err := r.db.QueryContext(ctx, selectAnMonthCount, shortURL)
 	if err != nil {
-		return nil, fmt.Errorf("r.db.Master.QueryContext: %w", err)
+		return nil, fmt.Errorf("query context: %w", err)
 	}
+
+	defer rows.Close()
 
 	monthCount := make(map[string]int)
 	var date string
 	var count int
 	for rows.Next() {
-		if err := rows.Scan(&date, &count); err != nil {
-			return nil, fmt.Errorf("rows.Scan: %w", err)
+		err := rows.Scan(&date, &count)
+		if err != nil {
+			return nil, fmt.Errorf("rows scan: %w", err)
 		}
 
 		monthCount[date] = count
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows error: %w", err)
 	}
 
 	return monthCount, nil
 }
 
 func (r *PgRepo) GetAnUserAgentCount(ctx context.Context, shortURL string) (map[string]int, error) {
-	rows, err := r.db.Master.QueryContext(ctx, selectAnUserAgentCount, shortURL)
+	rows, err := r.db.QueryContext(ctx, selectAnUserAgentCount, shortURL)
 	if err != nil {
-		return nil, fmt.Errorf("r.db.Master.QueryContext: %w", err)
+		return nil, fmt.Errorf("query context: %w", err)
 	}
+
+	defer rows.Close()
+
 	userAgentCount := make(map[string]int)
-	var date string
+	var userAgent string
 	var count int
 	for rows.Next() {
-		if err := rows.Scan(&date, &count); err != nil {
-			return nil, fmt.Errorf("rows.Scan: %w", err)
+		err := rows.Scan(&userAgent, &count)
+		if err != nil {
+			return nil, fmt.Errorf("rows scan: %w", err)
 		}
 
-		userAgentCount[date] = count
+		userAgentCount[userAgent] = count
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows error: %w", err)
 	}
 
 	return userAgentCount, nil
 }
 
-func (r *PgRepo) CreateAn(ctx context.Context, analytics *models.Analytics) (int64, error) {
-	tx, err := r.db.Master.BeginTx(ctx, nil)
+func (r *PgRepo) CreateAn(ctx context.Context, analytics *models.Analytics) (int, error) {
+	var id int
+	err := r.db.QueryRowContext(ctx, insertAn,
+		analytics.ShortURL,
+		analytics.UserAgent,
+		analytics.IP).
+		Scan(&id)
 	if err != nil {
-		return 0, fmt.Errorf("r.db.Master.BeginTx: %w", err)
-	}
-
-	defer r.rollbackTransaction(tx)
-
-	var id int64
-	err = tx.QueryRowContext(ctx, insertAn,
-		analytics.ShortURL, analytics.UserAgent, analytics.IP).Scan(&id)
-	if err != nil {
-		return 0, fmt.Errorf("tx.QueryRowContext Scan: %w", err)
-	}
-
-	if err = tx.Commit(); err != nil {
-		return 0, fmt.Errorf("tx.Commit: %w", err)
+		return 0, fmt.Errorf("create an: %w", err)
 	}
 
 	return id, nil

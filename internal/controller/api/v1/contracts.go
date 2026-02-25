@@ -1,4 +1,4 @@
-package controller
+package v1
 
 import (
 	"context"
@@ -6,17 +6,17 @@ import (
 	"github.com/Oleska1601/WBURLShortener/internal/models"
 )
 
-type UsecaseInterface interface {
-	URLUsecaseInterface
-	AnalyticsUsecaseInterface
+type ServiceI interface {
+	URLI
+	AnalyticsI
 }
 
-type URLUsecaseInterface interface {
+type URLI interface {
 	GetURL(context.Context, string) (string, error)
 	CreateURL(context.Context, *models.URL) (*models.URL, error)
 }
 
-type AnalyticsUsecaseInterface interface {
+type AnalyticsI interface {
 	GetAnalytics(context.Context, string) (*models.AnAgregation, error)
-	CreateAnalytics(context.Context, *models.Analytics) (int64, error)
+	CreateAnalytics(context.Context, *models.Analytics) (int, error)
 }

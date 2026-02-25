@@ -2,17 +2,19 @@ package app
 
 import (
 	"context"
-	"log"
+	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/Oleska1601/WBURLShortener/config"
-	"github.com/Oleska1601/WBURLShortener/internal/controller"
-	"github.com/Oleska1601/WBURLShortener/internal/database/repo"
+	api "github.com/Oleska1601/WBURLShortener/internal/controller"
+	v1 "github.com/Oleska1601/WBURLShortener/internal/controller/api/v1"
 	"github.com/Oleska1601/WBURLShortener/internal/redis"
-	"github.com/Oleska1601/WBURLShortener/internal/usecase"
+	"github.com/Oleska1601/WBURLShortener/internal/repo/postgres"
+	"github.com/Oleska1601/WBURLShortener/internal/service"
 	"github.com/wb-go/wbf/zlog"
 )
 
@@ -21,32 +23,33 @@ import (
 // @description API for URL Shortener
 // @termsOfService http://swagger.io/terms/
 
-// @host localhost:8082
+// @host localhost:8081
 // @BasePath /
 func Run(cfg *config.Config) {
-	// logger
 	zlog.Init()
 	if err := zlog.SetLevel(cfg.Logger.Level); err != nil {
-		log.Fatalln("set zlog level error: %w", err)
+		zlog.Logger.Fatal().
+			Err(err).
+			Str("path", "Run zlog.SetLevel").
+			Msg("failed to set log level")
 	}
 
-	// postgres
-	db, err := initDB(&cfg.DB)
+	db, err := initDB(&cfg.Database.Postgres)
 	if err != nil {
 		zlog.Logger.Fatal().
 			Err(err).
 			Str("path", "Run initDB").
-			Msg("init database")
+			Msg("failed to init database")
 	}
 
-	// postgres repo
-	pgRepo := repo.New(db)
-	if err := pgRepo.ApplyMigrations(); err != nil {
+	repo := postgres.New(db)
+	if err := repo.ApplyMigrations(); err != nil {
 		zlog.Logger.Fatal().
 			Err(err).
-			Str("path", "Run pgRepo.ApplyMigrations").
-			Msg("apply migrations to database")
+			Str("path", "Run repo.ApplyMigrations").
+			Msg("failed to apply migrations")
 	}
+
 	redis, err := redis.New(&cfg.Redis)
 	if err != nil {
 		zlog.Logger.Fatal().
@@ -55,37 +58,33 @@ func Run(cfg *config.Config) {
 			Msg("init redis")
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	usecase := usecase.New(redis, pgRepo)
-	server := controller.New(&cfg.Server, usecase)
+	service := service.New(redis, repo)
+	apiV1 := v1.New(service)
+	router := api.Register(&cfg.Gin, apiV1)
+	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
+	server := &http.Server{Addr: addr, Handler: router}
 
 	go func() {
-		if err := server.Srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			zlog.Logger.
-				Fatal().
+		zlog.Logger.Info().Str("path", "Run").Str("addr", addr).Msg("start server")
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			zlog.Logger.Fatal().
 				Err(err).
-				Str("path", "Run server.Srv.ListenAndServe").
-				Msg("cannot start server")
+				Str("path", "Run server.ListenAndServe").
+				Msg("failed to process server")
 		}
-		zlog.Logger.Info().Msgf("server is started http://%s:%d/", cfg.Server.Host, cfg.Server.Port)
 	}()
 
-	// Ожидание сигнала для graceful shutdown
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-	zlog.Logger.Info().Msg("shutting down server...")
-	cancel()
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+	<-stop
 
-	shutdownCtx, shutdownCancel := context.WithTimeout(ctx, cfg.Server.ShutdownTimeout)
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), cfg.Server.ShutdownTimeout)
 	defer shutdownCancel()
-	if err := server.Srv.Shutdown(shutdownCtx); err != nil {
-		zlog.Logger.Error().Err(err).Msg("server shutdown")
-		return
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		zlog.Logger.Err(err).Str("path", "App server.Shutdown").
+			Msg("failed to shutdown server")
 	}
 
-	zlog.Logger.Info().Msg("server exited properly")
-
+	zlog.Logger.Info().Msg("shutdown server properly")
 }

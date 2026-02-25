@@ -1,6 +1,7 @@
-package controller
+package api
 
 import (
+	"github.com/Oleska1601/WBURLShortener/config"
 	_ "github.com/Oleska1601/WBURLShortener/docs"
 
 	"github.com/wb-go/wbf/ginext"
@@ -9,17 +10,20 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func (s *Server) setupRouter() {
-	ginMode := ""
-	engine := ginext.New(ginMode)
-	engine.Static("/static", "./web")
+const (
+	APIGroupURI = "/api"
+)
 
-	notifyGroup := engine.Group("/api/")
-	{
-		notifyGroup.POST("/shorten", s.CreateShortURLHandler)
-		notifyGroup.GET("/s/:short_url", s.RedirectShortURLHandler)
-		notifyGroup.GET("/analytics/:short_url", s.GetAnalyticsHandler)
-	}
+type HTTPController interface {
+	RegisterHandlers(*ginext.RouterGroup)
+}
+
+func Register(gin *config.GinConfig, controller HTTPController) *ginext.Engine {
+	engine := ginext.New(gin.Mode)
 	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	s.Srv.Handler = engine
+
+	group := engine.Group(APIGroupURI)
+	controller.RegisterHandlers(group)
+	engine.Static("/static", "./front")
+	return engine
 }

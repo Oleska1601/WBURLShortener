@@ -1,9 +1,10 @@
 package config
 
 import (
+	"fmt"
 	"time"
 
-	"github.com/wb-go/wbf/config"
+	wbfcfg "github.com/wb-go/wbf/config"
 )
 
 type AppConfig struct {
@@ -17,20 +18,19 @@ type ServerConfig struct {
 	ShutdownTimeout time.Duration `mapstructure:"shutdown_timeout"`
 }
 
+type DatabaseConfig struct {
+	Postgres PostgresConfig `mapstructure:"postgres"`
+}
+
 type PostgresConfig struct {
 	Host            string        `mapstructure:"host"`
 	Port            int           `mapstructure:"port"`
-	User            string        `mapstructure:"user"`
+	Username        string        `mapstructure:"username"`
 	Password        string        `mapstructure:"password"`
-	DB              string        `mapstructure:"db"`
-	SSLMode         string        `mapstructure:"ssl_mode"`
+	Database        string        `mapstructure:"database"`
 	MaxOpenConns    int           `mapstructure:"max_open_conns"`
 	MaxIdleConns    int           `mapstructure:"max_idle_conns"`
 	ConnMaxLifetime time.Duration `mapstructure:"conn_max_lifetime"`
-}
-
-type LoggerConfig struct {
-	Level string `mapstructure:"level"`
 }
 
 type RedisConfig struct {
@@ -41,22 +41,37 @@ type RedisConfig struct {
 	TTL      time.Duration `mapstructure:"ttl"`
 }
 
+type LoggerConfig struct {
+	Level string `mapstructure:"level"`
+}
+
+type GinConfig struct {
+	Mode string `mapstructure:"mode"`
+}
+
 type Config struct {
-	App    AppConfig      `mapstructure:"app"`
-	Server ServerConfig   `mapstructure:"server"`
-	DB     PostgresConfig `mapstructure:"postgres"`
-	Logger LoggerConfig   `mapstructure:"logger"`
-	Redis  RedisConfig    `mapstructure:"redis"`
+	App      AppConfig      `mapstructure:"app"`
+	Server   ServerConfig   `mapstructure:"server"`
+	Database DatabaseConfig `mapstructure:"db"`
+	Redis    RedisConfig    `mapstructure:"redis"`
+	Logger   LoggerConfig   `mapstructure:"logger"`
+	Gin      GinConfig      `mapstructure:"gin"`
 }
 
 func New() (*Config, error) {
-	cfg := config.New()
-	cfg.LoadConfigFiles("./config/config.yaml")
+	config := wbfcfg.New()
 
-	// Включить env переменные с приставкой
-	cfg.EnableEnv("")
+	cfgFile := "./config/config.yaml"
+	if err := config.LoadConfigFiles(cfgFile); err != nil {
+		return nil, fmt.Errorf("load config files: %w", err)
+	}
 
-	var config Config
-	err := cfg.Unmarshal(&config)
-	return &config, err
+	config.EnableEnv("")
+
+	var cfg Config
+	if err := config.Unmarshal(&cfg); err != nil {
+		return nil, fmt.Errorf("config unmarshal: %w", err)
+	}
+
+	return &cfg, nil
 }
